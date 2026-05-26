@@ -1,6 +1,7 @@
 package com.blog.interceptor;
 
 import com.blog.util.JwtUtil;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,11 @@ public class LoginInterceptor implements HandlerInterceptor {
                              Object handler) throws Exception {
         // 从请求头获取 Token
         String token = request.getHeader("Authorization");
+
+        // 如果请求头没有，则从 Cookie 获取（用于页面导航请求）
+        if (token == null || token.isEmpty()) {
+            token = getTokenFromCookie(request);
+        }
 
         if (token == null || token.isEmpty()) {
             handleUnauthorized(request, response, "未登录，请先登录");
@@ -40,6 +46,21 @@ public class LoginInterceptor implements HandlerInterceptor {
         request.setAttribute("role", role);
 
         return true;
+    }
+
+    /**
+     * 从 Cookie 中获取 Token
+     */
+    private String getTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("blog_token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     private void handleUnauthorized(HttpServletRequest request, HttpServletResponse response,

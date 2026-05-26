@@ -12,6 +12,8 @@ public interface ArticleService {
 
     PageResult<Article> findByUserId(Integer userId, int pageNum, int pageSize);
 
+    PageResult<Article> findByCategoryId(Integer categoryId, int pageNum, int pageSize);
+
     PageResult<Article> search(String keyword, int pageNum, int pageSize);
 
     Article create(Article article);

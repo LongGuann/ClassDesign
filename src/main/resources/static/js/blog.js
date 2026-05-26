@@ -8,15 +8,17 @@ function getToken() {
     return localStorage.getItem('blog_token');
 }
 
-// 存储 Token
+// 存储 Token（同时写入 Cookie 以支持页面导航认证）
 function setToken(token) {
     localStorage.setItem('blog_token', token);
+    document.cookie = 'blog_token=' + token + '; path=/; max-age=86400';
 }
 
 // 清除 Token
 function clearToken() {
     localStorage.removeItem('blog_token');
     localStorage.removeItem('blog_user');
+    document.cookie = 'blog_token=; path=/; max-age=0';
 }
 
 // 获取认证请求头
