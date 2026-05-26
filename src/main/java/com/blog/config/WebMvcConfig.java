@@ -28,8 +28,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/articles/detail-page/**",
                         "/api/categories/list",
                         "/api/comments/list/**",
-                        // 公开页面
+                        // 公开页面（页面内通过 JS 判断登录状态）
                         "/api/articles/index",
+                        "/api/articles/create-page",
+                        "/api/articles/edit-page/**",
+                        "/api/articles/manage-page",
+                        "/api/categories/manage-page",
+                        "/api/users/profile-page",
                         // 静态资源
                         "/static/**"
                 );
