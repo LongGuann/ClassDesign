@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布文章 - 博客管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/blog.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-blog fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/api/articles/index">📝 博客管理系统</a>
+        <div class="collapse navbar-collapse show">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/api/articles/index">← 返回首页</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="bi bi-pencil-square"></i> 发布文章</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="articleForm">
+                            <div class="mb-3">
+                                <label class="form-label">文章标题 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" placeholder="请输入文章标题" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">文章分类 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="categoryId" required>
+                                    <option value="">请选择分类</option>
+                                    <option th:each="cat : ${categories}"
+                                            th:value="${cat.categoryId}"
+                                            th:text="${cat.name}">分类名</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">文章摘要</label>
+                                <textarea class="form-control" id="summary" rows="2" placeholder="简短的文章摘要（可选）" maxlength="500"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">文章正文 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="content" rows="15" placeholder="请输入文章内容..." required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">封面图片URL（可选）</label>
+                                <input type="text" class="form-control" id="coverImage" placeholder="https://example.com/image.jpg">
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <a href="/api/articles/index" class="btn btn-outline-secondary">取消</a>
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary me-2" onclick="saveDraft()">保存草稿</button>
+                                    <button type="submit" class="btn btn-primary" id="publishBtn">
+                                        <span id="publishText">发布文章</span>
+                                        <span id="publishSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/blog.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const token = getToken();
+    if (!token) {
+        window.location.href = '/api/users/login-page';
+        return;
+    }
+    const user = await fetchCurrentUser();
+    if (!user) {
+        window.location.href = '/api/users/login-page';
+    }
+});
+
+document.getElementById('articleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await publishArticle(1);
+});
+
+async function saveDraft() {
+    await publishArticle(0);
+}
+
+async function publishArticle(status) {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const categoryId = document.getElementById('categoryId').value;
+
+    if (!title) { showToast('请输入文章标题', 'warning'); return; }
+    if (!categoryId) { showToast('请选择文章分类', 'warning'); return; }
+    if (!content) { showToast('请输入文章内容', 'warning'); return; }
+
+    document.getElementById('publishText').classList.add('d-none');
+    document.getElementById('publishSpinner').classList.remove('d-none');
+    document.getElementById('publishBtn').disabled = true;
+
+    const result = await apiRequest(`${API_BASE}/articles`, 'POST', {
+        title,
+        content,
+        summary: document.getElementById('summary').value.trim(),
+        coverImage: document.getElementById('coverImage').value.trim(),
+        categoryId: parseInt(categoryId),
+        status
+    });
+
+    document.getElementById('publishText').classList.remove('d-none');
+    document.getElementById('publishSpinner').classList.add('d-none');
+    document.getElementById('publishBtn').disabled = false;
+
+    if (result && result.code === 200) {
+        showToast(status === 1 ? '发布成功！' : '已保存为草稿', 'success');
+        setTimeout(() => {
+            window.location.href = `/api/articles/detail-page/${result.data.articleId}`;
+        }, 500);
+    } else {
+        showToast(result.message || '操作失败', 'danger');
+    }
+}
+</script>
+</body>
+</html>

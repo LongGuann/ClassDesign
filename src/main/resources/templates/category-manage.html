@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类管理 - 博客管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/blog.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-blog fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/api/articles/index">📝 博客管理系统</a>
+        <div class="collapse navbar-collapse show">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/api/articles/index">← 返回首页</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn">退出</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="main-content">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <!-- 新增分类 -->
+                <div class="card mb-4">
+                    <div class="card-header"><i class="bi bi-plus-circle"></i> 新增分类</div>
+                    <div class="card-body">
+                        <form id="categoryForm">
+                            <div class="mb-3">
+                                <label class="form-label">分类名称</label>
+                                <input type="text" class="form-control" id="categoryName" placeholder="如：技术博客" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">分类描述</label>
+                                <input type="text" class="form-control" id="categoryDesc" placeholder="简要描述该分类">
+                            </div>
+                            <button type="submit" class="btn btn-primary">添加分类</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <!-- 分类列表 -->
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-list"></i> 分类列表</div>
+                    <div class="card-body">
+                        <table class="table" id="categoryTable">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>描述</th>
+                                    <th>排序</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryList"></tbody>
+                        </table>
+                        <div class="empty-state" id="emptyCategories" style="display:none;">
+                            <i class="bi bi-folder"></i>
+                            <p class="mt-2">暂无分类</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body"><p id="confirmModalBody">确认执行此操作？</p></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmModalBtn">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container text-center">
+        <small>© 2026 博客管理系统 - 网络接口编程课程设计</small>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/blog.js"></script>
+<script>
+async function loadCategories() {
+    const result = await apiRequest(`${API_BASE}/categories/list`);
+    if (result && result.code === 200) {
+        const categories = result.data;
+        const tbody = document.getElementById('categoryList');
+        const empty = document.getElementById('emptyCategories');
+
+        if (categories.length === 0) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        tbody.innerHTML = categories.map(c => `
+            <tr>
+                <td><strong>${c.name}</strong></td>
+                <td class="text-muted small">${c.description || '-'}</td>
+                <td>${c.sortOrder || 0}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${c.categoryId})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+}
+
+document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const name = document.getElementById('categoryName').value.trim();
+    const description = document.getElementById('categoryDesc').value.trim();
+
+    if (!name) { showToast('请输入分类名称', 'warning'); return; }
+
+    const result = await apiRequest(`${API_BASE}/categories`, 'POST', { name, description });
+    if (result && result.code === 200) {
+        showToast('添加成功', 'success');
+        document.getElementById('categoryForm').reset();
+        loadCategories();
+    } else {
+        showToast(result.message || '添加失败', 'danger');
+    }
+});
+
+async function deleteCategory(id) {
+    if (!await showConfirm('确定要删除此分类吗？')) return;
+    const result = await apiRequest(`${API_BASE}/categories/${id}`, 'DELETE');
+    if (result && result.code === 200) {
+        showToast('删除成功', 'success');
+        loadCategories();
+    } else {
+        showToast(result.message || '删除失败', 'danger');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!getToken()) { window.location.href = '/api/users/login-page'; return; }
+    const user = await fetchCurrentUser();
+    if (user && user.role !== 'admin') {
+        showToast('仅管理员可访问此页面', 'warning');
+        setTimeout(() => window.location.href = '/api/articles/index', 1000);
+        return;
+    }
+    loadCategories();
+});
+
+document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    clearToken();
+    window.location.href = '/api/articles/index';
+});
+</script>
+</body>
+</html>

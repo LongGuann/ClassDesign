@@ -1,0 +1,29 @@
+# Maven
+target/
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.rar
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# 编译
+*.class
+
+# 环境配置（含密码的本地配置）
+application-local.yml
