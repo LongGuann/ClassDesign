@@ -28,6 +28,17 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public Category create(Category category) {
+        // 检查名称是否已存在
+        List<Category> all = categoryMapper.selectAll();
+        boolean exists = all.stream()
+                .anyMatch(c -> c.getName().equals(category.getName()));
+        if (exists) {
+            throw new IllegalArgumentException("分类名称已存在");
+        }
+        // 设置默认排序
+        if (category.getSortOrder() == null) {
+            category.setSortOrder(0);
+        }
         categoryMapper.insert(category);
         return category;
     }

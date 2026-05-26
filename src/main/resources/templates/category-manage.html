@@ -122,12 +122,20 @@ async function loadCategories() {
     }
 }
 
+let isSubmitting = false;
+
 document.getElementById('categoryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+    if (isSubmitting) return; // 防止重复提交
+    isSubmitting = true;
+
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+
     const name = document.getElementById('categoryName').value.trim();
     const description = document.getElementById('categoryDesc').value.trim();
 
-    if (!name) { showToast('请输入分类名称', 'warning'); return; }
+    if (!name) { showToast('请输入分类名称', 'warning'); isSubmitting = false; btn.disabled = false; return; }
 
     const result = await apiRequest(`${API_BASE}/categories`, 'POST', { name, description });
     if (result && result.code === 200) {
@@ -137,6 +145,9 @@ document.getElementById('categoryForm').addEventListener('submit', async functio
     } else {
         showToast(result.message || '添加失败', 'danger');
     }
+
+    isSubmitting = false;
+    btn.disabled = false;
 });
 
 async function deleteCategory(id) {
