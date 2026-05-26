@@ -35,10 +35,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (exists) {
             throw new IllegalArgumentException("分类名称已存在");
         }
-        // 设置默认排序
-        if (category.getSortOrder() == null) {
-            category.setSortOrder(0);
-        }
+        // 自动计算排序序号：当前最大序号 + 1
+        Integer maxSort = categoryMapper.selectMaxSortOrder();
+        category.setSortOrder((maxSort == null ? 0 : maxSort) + 1);
         categoryMapper.insert(category);
         return category;
     }

@@ -26,6 +26,10 @@
         FROM category ORDER BY sort_order ASC, create_time DESC
     </select>
 
+    <select id="selectMaxSortOrder" resultType="java.lang.Integer">
+        SELECT MAX(sort_order) FROM category
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="categoryId">
         INSERT INTO category (name, description, sort_order)
         VALUES (#{name}, #{description}, #{sortOrder})

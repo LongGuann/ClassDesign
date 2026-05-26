@@ -12,6 +12,8 @@ public interface CategoryMapper {
 
     List<Category> selectAll();
 
+    Integer selectMaxSortOrder();
+
     int insert(Category category);
 
     int update(Category category);
