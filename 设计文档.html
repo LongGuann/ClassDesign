@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>博客管理系统 - 系统设计文档</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2.5cm 2cm 2.5cm 2cm;
+    @bottom-center {
+      content: "第 " counter(page) " 页";
+      font-size: 10pt;
+      color: #666;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    color: #2c3e50;
+    line-height: 1.8;
+  }
+
+  /* ===== 封面 ===== */
+  .cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+  }
+  .cover .school { font-size: 28pt; font-weight: bold; color: #1a3c6e; margin-bottom: 10px; letter-spacing: 4px; }
+  .cover .course { font-size: 20pt; color: #1a3c6e; margin-bottom: 40px; }
+  .cover .title { font-size: 32pt; font-weight: bold; color: #c0392b; margin-bottom: 30px; letter-spacing: 2px; }
+  .cover .divider { color: #1a3c6e; font-size: 16pt; letter-spacing: 8px; margin-bottom: 30px; }
+  .cover .info { font-size: 14pt; margin-bottom: 8px; color: #333; }
+  .cover .info strong { color: #1a3c6e; }
+
+  /* ===== 目录 ===== */
+  .toc { page-break-after: always; }
+  .toc h1 { font-size: 22pt; color: #1a3c6e; border-bottom: 3px solid #1a3c6e; padding-bottom: 8px; margin-bottom: 20px; text-align: center; }
+  .toc ol { list-style: none; counter-reset: toc-counter; }
+  .toc ol > li { counter-increment: toc-counter; margin: 6px 0; font-size: 12pt; }
+  .toc ol > li::before { content: counter(toc-counter, cjk-ideographic) "、"; font-weight: bold; color: #1a3c6e; }
+  .toc ol > li.section { font-weight: bold; margin-top: 12px; }
+  .toc ol ol { margin-left: 2em; list-style: none; counter-reset: sub-counter; }
+  .toc ol ol > li { counter-increment: sub-counter; font-weight: normal; }
+  .toc ol ol > li::before { content: counter(toc-counter) "." counter(sub-counter) "  "; color: #666; }
+
+  /* ===== 章节 ===== */
+  .chapter { page-break-after: always; }
+  .chapter:last-child { page-break-after: auto; }
+  h1 { font-size: 20pt; color: #1a3c6e; border-bottom: 3px solid #1a3c6e; padding-bottom: 8px; margin: 30px 0 20px 0; }
+  h2 { font-size: 16pt; color: #1a3c6e; margin: 25px 0 12px 0; padding-left: 10px; border-left: 4px solid #c0392b; }
+  h3 { font-size: 13pt; color: #2c3e50; margin: 18px 0 8px 0; }
+  p { margin: 10px 0; text-indent: 2em; font-size: 12pt; }
+  p.no-indent { text-indent: 0; }
+
+  /* ===== 表格 ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10.5pt;
+  }
+  th {
+    background: #1a3c6e;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+  td {
+    padding: 7px 10px;
+    border: 1px solid #d0d7de;
+    vertical-align: top;
+  }
+  tr:nth-child(even) { background: #f6f8fa; }
+  tr:nth-child(odd) { background: #fff; }
+
+  /* ===== 代码块 ===== */
+  .code-block {
+    background: #f0f3f6;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    margin: 12px 0;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  /* ===== 提示框 ===== */
+  .info-box {
+    background: #e8f4fd;
+    border-left: 4px solid #1a3c6e;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .info-box p { text-indent: 0; margin: 4px 0; }
+
+  .warning-box {
+    background: #fff8e1;
+    border-left: 4px solid #f39c12;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* ===== 架构图容器 ===== */
+  .arch-box {
+    background: #f8f9fa;
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    text-align: center;
+    font-family: "SF Mono", monospace;
+    font-size: 9pt;
+    line-height: 1.6;
+  }
+  .arch-box .layer { padding: 8px; margin: 4px 0; border-radius: 6px; }
+  .arch-box .layer-top { background: #e3f2fd; border: 1px solid #90caf9; }
+  .arch-box .layer-mid { background: #e8f5e9; border: 1px solid #a5d6a7; }
+  .arch-box .layer-data { background: #fff3e0; border: 1px solid #ffcc80; }
+  .arch-box .layer-db { background: #fce4ec; border: 1px solid #ef9a9a; }
+  .arch-box .arrow { color: #666; font-size: 12pt; margin: 2px 0; }
+  .arch-box .label { font-weight: bold; font-size: 10pt; }
+
+  /* ===== 实体关系 ===== */
+  .er-box {
+    background: #f8f9fa;
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    font-family: "SF Mono", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 页内导航 ===== */
+  .back-to-top { text-align: right; font-size: 10pt; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== 封面 ==================== -->
+<div class="cover">
+  <div class="school">百色学院</div>
+  <div class="course">《网络接口编程》课程设计</div>
+  <div class="title">博客管理系统</div>
+  <div class="title" style="font-size:18pt; color:#555;">系统设计文档</div>
+  <div class="divider">━ ━ ━ ━ ━ ━ ━ ━ ━ ━</div>
+  <div class="info"><strong>项目名称：</strong>博客管理系统（Blog Management System）</div>
+  <div class="info"><strong>课程名称：</strong>网络接口编程</div>
+  <div class="info"><strong>技术栈：</strong>Spring Boot + Spring MVC + MyBatis + MySQL + Bootstrap</div>
+  <div class="info"><strong>版本：</strong>1.0.0</div>
+  <div class="info"><strong>日期：</strong>2026年5月</div>
+</div>
+
+<!-- ==================== 目录 ==================== -->
+<div class="toc">
+  <h1>目　录</h1>
+  <ol>
+    <li class="section">项目背景与需求分析</li>
+    <ol>
+      <li>项目背景</li>
+      <li>需求分析概述</li>
+      <li>功能性需求</li>
+      <li>非功能性需求</li>
+    </ol>
+    <li class="section">系统功能模块划分</li>
+    <ol>
+      <li>系统总体功能模块</li>
+      <li>各模块详细说明</li>
+      <li>用户角色与用例</li>
+    </ol>
+    <li class="section">数据库设计</li>
+    <ol>
+      <li>概念设计（ER图）</li>
+      <li>逻辑设计（表结构）</li>
+      <li>表关系说明</li>
+    </ol>
+    <li class="section">系统架构设计</li>
+    <ol>
+      <li>系统总体架构</li>
+      <li>MVC分层架构</li>
+      <li>请求处理流程</li>
+      <li>代码组织结构</li>
+    </ol>
+    <li class="section">技术选型说明</li>
+    <ol>
+      <li>后端技术栈</li>
+      <li>前端技术栈</li>
+      <li>开发工具与环境</li>
+    </ol>
+  </ol>
+</div>
+
+<!-- ==================== 第一章 ==================== -->
+<div class="chapter">
+<h1>一、项目背景与需求分析</h1>
+
+<h2>1.1 项目背景</h2>
+<p>随着互联网技术的快速发展和信息传播方式的深刻变革，博客作为一种重要的网络信息发布与分享平台，在现代社会中扮演着越来越重要的角色。无论是个人用户记录生活感悟、分享专业知识，还是企业机构进行品牌宣传、技术沉淀，博客系统都提供了便捷高效的解决方案。</p>
+<p>目前市面上虽然有 WordPress、Typecho 等成熟的博客平台，但这些平台功能繁杂、定制成本高，对于学习 Java EE 企业级开发技术的学生而言，从零开始构建一个轻量级博客管理系统，能够深入理解 Web 应用从后端到前端的完整开发流程，掌握 Spring Boot、Spring MVC、MyBatis 等主流框架的实际应用。</p>
+<p>本课题旨在设计并实现一个功能完整、结构清晰的博客管理系统。系统采用 B/S 架构，基于 Spring Boot 框架进行后端开发，使用 MyBatis 作为数据持久层框架，MySQL 作为数据库存储引擎，前端采用 Bootstrap 框架构建响应式用户界面。通过本项目的开发，综合检验对网络接口编程课程所学知识的掌握程度，包括 RESTful API 设计、数据持久化、前后端交互、权限控制等核心技能。</p>
+<p>该系统面向两类用户群体：普通用户和管理员。普通用户可以浏览文章、发表评论，管理员则在此基础上拥有文章管理、分类管理和用户管理等高级权限。系统要求具备完整的用户认证流程、规范的数据库设计、良好的页面交互体验以及稳定的运行性能。</p>
+
+<h2>1.2 需求分析概述</h2>
+<p>经过对博客系统业务场景的深入分析，将系统需求划分为功能性需求和非功能性需求两大部分。功能性需求描述系统应提供的具体业务功能，非功能性需求则关注系统的性能、安全、可用性等方面。</p>
+
+<h2>1.3 功能性需求</h2>
+
+<table>
+<tr><th style="width:12%">模块</th><th style="width:10%">编号</th><th style="width:14%">功能名称</th><th style="width:44%">功能描述</th><th style="width:10%">用户类型</th></tr>
+<tr><td rowspan="4">用户模块</td><td>F-001</td><td>用户注册</td><td>用户填写用户名、邮箱、密码完成注册</td><td>所有用户</td></tr>
+<tr><td>F-002</td><td>用户登录</td><td>输入用户名和密码进行身份认证，返回 JWT Token</td><td>所有用户</td></tr>
+<tr><td>F-003</td><td>个人信息管理</td><td>查看和修改个人基本资料</td><td>已登录用户</td></tr>
+<tr><td>F-004</td><td>退出登录</td><td>清除登录状态，退出系统</td><td>已登录用户</td></tr>
+
+<tr><td rowspan="5">文章模块</td><td>F-005</td><td>发布文章</td><td>填写标题、正文、分类等发布新文章</td><td>已登录用户</td></tr>
+<tr><td>F-006</td><td>编辑文章</td><td>修改已发布文章的内容</td><td>作者本人</td></tr>
+<tr><td>F-007</td><td>删除文章</td><td>删除指定的文章</td><td>作者/管理员</td></tr>
+<tr><td>F-008</td><td>文章列表浏览</td><td>分页浏览所有文章，支持按分类筛选和模糊搜索</td><td>所有用户</td></tr>
+<tr><td>F-009</td><td>查看文章详情</td><td>查看文章完整内容和评论</td><td>所有用户</td></tr>
+
+<tr><td rowspan="3">评论模块</td><td>F-010</td><td>发表评论</td><td>对指定文章发表评论</td><td>已登录用户</td></tr>
+<tr><td>F-011</td><td>评论列表查看</td><td>查看文章下的所有评论</td><td>所有用户</td></tr>
+<tr><td>F-012</td><td>删除评论</td><td>删除不当评论</td><td>作者/管理员</td></tr>
+
+<tr><td rowspan="4">分类模块</td><td>F-013</td><td>创建分类</td><td>新增文章分类（如技术、生活、随笔等）</td><td>管理员</td></tr>
+<tr><td>F-014</td><td>编辑分类</td><td>修改分类名称和描述</td><td>管理员</td></tr>
+<tr><td>F-015</td><td>删除分类</td><td>删除指定分类</td><td>管理员</td></tr>
+<tr><td>F-016</td><td>分类列表查看</td><td>查看所有分类及对应文章数量</td><td>所有用户</td></tr>
+</table>
+
+<h2>1.4 非功能性需求</h2>
+<table>
+<tr><th style="width:15%">需求类别</th><th style="width:25%">需求描述</th><th>具体指标</th></tr>
+<tr><td rowspan="3">性能需求</td><td>页面响应时间</td><td>核心业务页面响应时间不超过3秒</td></tr>
+<tr><td>并发支持</td><td>支持至少50个用户同时在线访问</td></tr>
+<tr><td>数据库查询效率</td><td>带索引查询响应时间不超过1秒</td></tr>
+<tr><td rowspan="3">安全需求</td><td>用户认证</td><td>使用 JWT Token 进行身份认证，密码使用 SHA-256 加密存储</td></tr>
+<tr><td>权限控制</td><td>基于拦截器实现接口级权限校验，Cookie+Header 双通道 Token 验证</td></tr>
+<tr><td>数据安全</td><td>MyBatis 预编译防止 SQL 注入</td></tr>
+<tr><td rowspan="3">可用性需求</td><td>界面设计</td><td>Bootstrap 5 响应式布局，兼容 PC/移动端</td></tr>
+<tr><td>错误处理</td><td>@ControllerAdvice 全局统一异常处理，友好提示</td></tr>
+<tr><td>可维护性</td><td>MVC 分层架构，代码结构清晰，注释规范</td></tr>
+</table>
+</div>
+
+<!-- ==================== 第二章 ==================== -->
+<div class="chapter">
+<h1>二、系统功能模块划分</h1>
+
+<h2>2.1 系统总体功能模块</h2>
+<p>博客管理系统按业务功能划分为以下四大核心模块：</p>
+
+<table>
+<tr><th>模块</th><th>子功能</th><th>说明</th></tr>
+<tr><td rowspan="2">用户模块</td><td>注册 / 登录 / 退出</td><td>用户身份认证与会话管理（JWT）</td></tr>
+<tr><td>个人信息管理</td><td>用户查看和修改个人资料</td></tr>
+<tr><td rowspan="4">文章模块</td><td>发布文章</td><td>创建新博客文章（含标题、正文、分类、封面图）</td></tr>
+<tr><td>编辑 / 删除文章</td><td>对已发布文章的维护操作（仅作者或管理员）</td></tr>
+<tr><td>文章列表浏览</td><td>分页展示文章，支持按分类筛选和模糊搜索</td></tr>
+<tr><td>文章详情查看</td><td>查看文章完整内容，同时展示相关评论</td></tr>
+<tr><td rowspan="3">评论模块</td><td>发表评论</td><td>登录用户对文章进行评论互动</td></tr>
+<tr><td>评论列表查看</td><td>查看文章下按时间排序的所有评论</td></tr>
+<tr><td>删除评论</td><td>文章作者或管理员可删除评论</td></tr>
+<tr><td rowspan="2">分类模块</td><td>分类管理</td><td>管理员新增、编辑、删除文章分类</td></tr>
+<tr><td>分类展示</td><td>展示所有分类列表</td></tr>
+</table>
+
+<h2>2.2 各模块详细说明</h2>
+
+<h3>（1）用户模块</h3>
+<p>用户模块负责系统的身份认证和用户信息管理。新用户通过注册功能创建账户，系统对密码进行 SHA-256 加密处理，确保用户信息安全。注册成功后，用户可通过登录功能输入用户名和密码进行身份认证，认证通过后服务器返回 JWT 令牌（Token），前端将 Token 同时存储在 localStorage 和 Cookie 中，以同时支持 AJAX 请求和页面导航的认证需求。已登录用户可在个人信息页面查看和修改个人资料。退出登录时，前端清除本地存储的 Token 和 Cookie。</p>
+
+<h3>（2）文章模块</h3>
+<p>文章模块是博客系统的核心业务模块。已登录用户可以创建新文章，填写标题、正文内容、选择分类以及上传封面图片。文章发布后，所有访客（含未登录用户）可在首页浏览文章列表，列表支持分页展示、按分类筛选以及按标题或内容的关键字模糊搜索。用户点击文章标题可进入详情页查看完整内容和评论。文章作者和管理员拥有编辑和删除文章的权限。</p>
+
+<h3>（3）评论模块</h3>
+<p>评论模块为博客系统提供了互动功能。已登录用户可在文章详情页发表评论，评论内容会实时显示在该文章下方的评论列表中。评论列表按时间倒序排列，方便用户查看最新评论。文章作者和系统管理员有权删除不当评论，维护社区秩序。评论的发表和删除均采用 Ajax 异步请求方式，提升用户体验。</p>
+
+<h3>（4）分类模块</h3>
+<p>分类模块用于对博客文章进行归类管理。管理员可以创建、编辑和删除文章分类，例如"技术博客"、"生活随笔"、"学习笔记"等。每篇文章必须属于一个分类，分类列表展示所有分类名称。用户在首页可通过点击分类标签快速筛选该分类下的所有文章。</p>
+
+<h2>2.3 用户角色与用例</h2>
+<p>系统涉及两类角色：<strong>普通用户（User）</strong>和<strong>管理员（Admin）</strong>。</p>
+
+<table>
+<tr><th>角色</th><th>可用功能</th></tr>
+<tr><td>普通用户</td><td>注册账号、登录系统、浏览文章列表、查看文章详情、搜索文章、按分类筛选、发表评论、管理自己的文章（新增/编辑/删除）</td></tr>
+<tr><td>管理员</td><td>包含普通用户所有权限 + 管理所有文章、管理所有评论、管理文章分类（增/删/改）</td></tr>
+</table>
+</div>
+
+<!-- ==================== 第三章 ==================== -->
+<div class="chapter">
+<h1>三、数据库设计</h1>
+
+<h2>3.1 概念设计（ER 图）</h2>
+<p>根据需求分析，系统涉及的核心实体包括：<strong>用户（User）</strong>、<strong>文章（Article）</strong>、<strong>评论（Comment）</strong>和<strong>分类（Category）</strong>。各实体之间的关系如下：</p>
+
+<div class="arch-box" style="text-align:left; font-size:9pt;">
+<pre>
+┌──────────┐         ┌──────────────┐
+│   User   │         │   Category   │
+│ (用户表) │         │  (分类表)    │
+├──────────┤         ├──────────────┤
+│ user_id  │◄──┐    │ category_id  │◄──┐
+│ username │   │    │ name          │   │
+│ password │   │    │ description   │   │
+│ nickname │   └────┼──────┐        │   │
+│ email    │        │      │        │   │
+│ avatar   │        │      │        │   │
+│ role     │        │      │        │   │
+└──────────┘        │      │        │   │
+    │   ▲           │      │        │   │
+    │   │           │      │        │   │
+    │   └───────────┼──────┼────────┘   │
+    │               │      │            │
+    │      ┌────────┴──┐   │            │
+    └──────┤  Article  ├───┘            │
+           │ (文章表)  │                │
+           ├───────────┤                │
+           │article_id │                │
+           │ title     │                │
+           │ content   │                │
+           │ user_id(FK)│               │
+           │ category_id(FK)            │
+           └─────┬─────┘                │
+                 │                      │
+           ┌─────┴──────┐               │
+           │  Comment   │               │
+           │ (评论表)   │               │
+           ├────────────┤               │
+           │ comment_id │               │
+           │ content    │               │
+           │ article_id(FK)             │
+           │ user_id(FK)│               │
+           └────────────┘               │
+
+实体关系说明：
+  • User（1）──→ Article（N）  — 一个用户可以发布多篇文章
+  • User（1）──→ Comment（N） — 一个用户可以发表多条评论
+  • Category（1）──→ Article（N） — 一个分类下可以有多篇文章
+  • Article（1）──→ Comment（N） — 一篇文章可以有多条评论
+</pre>
+</div>
+
+<h2>3.2 逻辑设计（表结构）</h2>
+<p>数据库名：<strong>blog_db</strong>，字符集：<strong>utf8mb4</strong>。</p>
+
+<h3>（1）user（用户表）</h3>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td>user_id</td><td>INT(11)</td><td>主键，自增</td><td>用户ID</td></tr>
+<tr><td>username</td><td>VARCHAR(50)</td><td>非空，唯一</td><td>用户名</td></tr>
+<tr><td>password</td><td>VARCHAR(255)</td><td>非空</td><td>密码（SHA-256 加密）</td></tr>
+<tr><td>nickname</td><td>VARCHAR(50)</td><td>非空</td><td>用户昵称</td></tr>
+<tr><td>email</td><td>VARCHAR(100)</td><td>非空，唯一</td><td>邮箱</td></tr>
+<tr><td>avatar</td><td>VARCHAR(255)</td><td>可空</td><td>头像URL</td></tr>
+<tr><td>role</td><td>VARCHAR(20)</td><td>默认 'user'</td><td>角色：user/admin</td></tr>
+<tr><td>status</td><td>TINYINT(4)</td><td>默认 1</td><td>状态：1启用/0禁用</td></tr>
+<tr><td>create_time</td><td>DATETIME</td><td>默认当前时间</td><td>创建时间</td></tr>
+<tr><td>update_time</td><td>DATETIME</td><td>自动更新</td><td>更新时间</td></tr>
+</table>
+
+<h3>（2）category（分类表）</h3>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td>category_id</td><td>INT(11)</td><td>主键，自增</td><td>分类ID</td></tr>
+<tr><td>name</td><td>VARCHAR(50)</td><td>非空，唯一</td><td>分类名称</td></tr>
+<tr><td>description</td><td>VARCHAR(255)</td><td>可空</td><td>分类描述</td></tr>
+<tr><td>sort_order</td><td>INT(11)</td><td>默认 0</td><td>排序序号</td></tr>
+<tr><td>create_time</td><td>DATETIME</td><td>默认当前时间</td><td>创建时间</td></tr>
+<tr><td>update_time</td><td>DATETIME</td><td>自动更新</td><td>更新时间</td></tr>
+</table>
+
+<h3>（3）article（文章表）</h3>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td>article_id</td><td>INT(11)</td><td>主键，自增</td><td>文章ID</td></tr>
+<tr><td>title</td><td>VARCHAR(200)</td><td>非空</td><td>文章标题</td></tr>
+<tr><td>content</td><td>TEXT</td><td>非空</td><td>文章正文</td></tr>
+<tr><td>summary</td><td>VARCHAR(500)</td><td>可空</td><td>文章摘要</td></tr>
+<tr><td>cover_image</td><td>VARCHAR(255)</td><td>可空</td><td>封面图片URL</td></tr>
+<tr><td>user_id</td><td>INT(11)</td><td>非空，外键→user</td><td>作者ID</td></tr>
+<tr><td>category_id</td><td>INT(11)</td><td>非空，外键→category</td><td>分类ID</td></tr>
+<tr><td>status</td><td>TINYINT(4)</td><td>默认 1</td><td>状态：1发布/0草稿</td></tr>
+<tr><td>view_count</td><td>INT(11)</td><td>默认 0</td><td>浏览次数</td></tr>
+<tr><td>create_time</td><td>DATETIME</td><td>默认当前时间</td><td>创建时间</td></tr>
+<tr><td>update_time</td><td>DATETIME</td><td>自动更新</td><td>更新时间</td></tr>
+</table>
+<div class="info-box"><p><strong>索引：</strong>idx_user_id（user_id），idx_category_id（category_id），idx_create_time（create_time），ft_title_content（FULLTEXT 全文索引）</p></div>
+
+<h3>（4）comment（评论表）</h3>
+<table>
+<tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr>
+<tr><td>comment_id</td><td>INT(11)</td><td>主键，自增</td><td>评论ID</td></tr>
+<tr><td>content</td><td>VARCHAR(500)</td><td>非空</td><td>评论内容</td></tr>
+<tr><td>article_id</td><td>INT(11)</td><td>非空，外键→article</td><td>所属文章ID</td></tr>
+<tr><td>user_id</td><td>INT(11)</td><td>非空，外键→user</td><td>评论者ID</td></tr>
+<tr><td>create_time</td><td>DATETIME</td><td>默认当前时间</td><td>评论时间</td></tr>
+</table>
+
+<h2>3.3 表关系说明</h2>
+<p>四张表通过外键约束形成完整的关联关系：</p>
+<table>
+<tr><th>关系</th><th>外键</th><th>说明</th></tr>
+<tr><td>User 1→N Article</td><td>article.user_id → user.user_id</td><td>一个用户可以发布多篇文章</td></tr>
+<tr><td>User 1→N Comment</td><td>comment.user_id → user.user_id</td><td>一个用户可以发表多条评论</td></tr>
+<tr><td>Category 1→N Article</td><td>article.category_id → category.category_id</td><td>一个分类下可有多篇文章</td></tr>
+<tr><td>Article 1→N Comment</td><td>comment.article_id → article.article_id</td><td>一篇文章可有多条评论</td></tr>
+</table>
+</div>
+
+<!-- ==================== 第四章 ==================== -->
+<div class="chapter">
+<h1>四、系统架构设计</h1>
+
+<h2>4.1 系统总体架构</h2>
+<p>博客管理系统采用基于 B/S（Browser/Server）模式的分层架构设计。系统整体分为表现层、业务逻辑层和数据访问层，各层职责清晰、耦合度低，便于开发和维护。</p>
+
+<div class="arch-box">
+<div class="layer layer-top">
+<div class="label">前端表现层（Presentation Layer）</div>
+HTML5 + CSS3 + JavaScript (ES6) + Bootstrap 5<br>
+Thymeleaf 模板引擎 · Ajax 异步请求
+</div>
+<div class="arrow">↓ HTTP/JSON ↕</div>
+<div class="layer layer-mid">
+<div class="label">后端控制层（Controller Layer）</div>
+UserController · ArticleController · CommentController · CategoryController<br>
+接收请求 · 参数校验 · 调用服务 · 返回视图/JSON
+</div>
+<div class="arrow">↓ 调用</div>
+<div class="layer layer-mid">
+<div class="label">业务逻辑层（Service Layer）</div>
+UserService · ArticleService · CommentService · CategoryService<br>
+业务处理 · 权限验证 · 事务管理
+</div>
+<div class="arrow">↓ 调用</div>
+<div class="layer layer-data">
+<div class="label">数据访问层（Data Access Layer）</div>
+MyBatis Mapper 接口 + XML 映射文件<br>
+动态 SQL · 预编译 · 结果映射
+</div>
+<div class="arrow">↓ JDBC</div>
+<div class="layer layer-db">
+<div class="label">数据存储层（Database Layer）</div>
+MySQL 8.0 · blog_db · 4张核心数据表
+</div>
+</div>
+
+<h2>4.2 MVC 分层架构</h2>
+<p>系统严格遵循 Spring MVC 的分层设计思想，各层职责如下：</p>
+
+<table>
+<tr><th>层次</th><th>组件</th><th>包路径</th><th>职责说明</th></tr>
+<tr><td rowspan="4">Controller 层</td><td>UserController</td><td>controller</td><td>处理用户注册、登录等请求</td></tr>
+<tr><td>ArticleController</td><td>controller</td><td>文章增删改查、页面导航</td></tr>
+<tr><td>CommentController</td><td>controller</td><td>评论发表与删除</td></tr>
+<tr><td>CategoryController</td><td>controller</td><td>分类管理（仅管理员）</td></tr>
+<tr><td rowspan="4">Service 层</td><td>UserService + Impl</td><td>service/impl</td><td>用户认证、密码加密</td></tr>
+<tr><td>ArticleService + Impl</td><td>service/impl</td><td>文章 CRUD、分页查询</td></tr>
+<tr><td>CommentService + Impl</td><td>service/impl</td><td>评论业务逻辑</td></tr>
+<tr><td>CategoryService + Impl</td><td>service/impl</td><td>分类管理业务逻辑</td></tr>
+<tr><td rowspan="4">Mapper 层</td><td>UserMapper + XML</td><td>mapper</td><td>用户数据持久化</td></tr>
+<tr><td>ArticleMapper + XML</td><td>mapper</td><td>文章数据持久化（含 JOIN）</td></tr>
+<tr><td>CommentMapper + XML</td><td>mapper</td><td>评论数据持久化</td></tr>
+<tr><td>CategoryMapper + XML</td><td>mapper</td><td>分类数据持久化</td></tr>
+<tr><td rowspan="4">基础设施</td><td>JwtUtil</td><td>util</td><td>JWT Token 生成与验证</td></tr>
+<tr><td>Result</td><td>util</td><td>统一 API 响应封装</td></tr>
+<tr><td>LoginInterceptor</td><td>interceptor</td><td>请求认证拦截（Header + Cookie）</td></tr>
+<tr><td>GlobalExceptionHandler</td><td>handler</td><td>全局异常统一处理</td></tr>
+</table>
+
+<h2>4.3 请求处理流程</h2>
+<p>一次典型的请求处理流程如下（以"查看文章详情"为例）：</p>
+
+<div class="code-block">
+步骤1：浏览器点击文章标题 → 发送 GET 请求 /api/articles/detail-page/1
+步骤2：DispatcherServlet 前端控制器拦截请求
+步骤3：根据 URL 匹配到 ArticleController 的 detailPage() 方法
+步骤4：ArticleService 调用 ArticleMapper 查询数据库（含 User 和 Category 的 JOIN）
+步骤5：MyBatis 执行预编译 SQL，返回查询结果
+步骤6：Controller 将数据封装为 Model，渲染 Thymeleaf 模板
+步骤7：浏览器响应 HTML 页面，呈现给用户
+</div>
+
+<h2>4.4 项目代码结构</h2>
+<div class="code-block">
+blog-system/
+├── pom.xml                          # Maven 项目配置
+├── sql/init.sql                     # 数据库建表脚本
+└── src/main/
+    ├── java/com/blog/
+    │   ├── BlogApplication.java     # Spring Boot 启动类
+    │   ├── config/WebMvcConfig.java # MVC 配置 + 拦截器注册
+    │   ├── controller/              # 4 个控制器
+    │   ├── service/ + impl/         # 4 个 Service 接口 + 实现
+    │   ├── mapper/                  # 4 个 Mapper 接口
+    │   ├── entity/                  # 4 个实体类
+    │   ├── dto/                     # 4 个数据传输对象
+    │   ├── interceptor/             # JWT 登录拦截器
+    │   ├── handler/                 # 全局异常处理
+    │   └── util/                    # JWT 工具 + 统一响应
+    └── resources/
+        ├── application.yml          # 应用配置
+        ├── mapper/                  # 4 个 MyBatis XML 映射
+        ├── static/css/ + js/        # 自定义样式和脚本
+        └── templates/               # 10 个 Thymeleaf 页面
+</div>
+</div>
+
+<!-- ==================== 第五章 ==================== -->
+<div class="chapter">
+<h1>五、技术选型说明</h1>
+
+<h2>5.1 后端技术栈</h2>
+<table>
+<tr><th>技术组件</th><th>版本</th><th>选型理由</th></tr>
+<tr><td>Java</td><td>JDK 17</td><td>LTS 长期支持版本，支持 Records、Sealed Class 等现代语言特性，性能优异</td></tr>
+<tr><td>Spring Boot</td><td>3.2.0</td><td>自动装配简化配置，内置 Tomcat 服务器一键启动，与 Spring MVC、MyBatis 无缝集成</td></tr>
+<tr><td>Spring MVC</td><td>6.1.1</td><td>@RestController 注解支持 RESTful API 开发，HandlerInterceptor 实现权限拦截，@ControllerAdvice 统一异常处理</td></tr>
+<tr><td>MyBatis</td><td>3.0.3</td><td>手写 SQL 优化灵活，支持动态 SQL 标签（if/where/foreach），自动结果映射，预编译机制防 SQL 注入</td></tr>
+<tr><td>MySQL</td><td>8.0</td><td>业界最流行的开源关系型数据库，性能优越，与 Java/MyBatis 集成方案成熟</td></tr>
+<tr><td>Maven</td><td>3.9+</td><td>标准化依赖管理和项目构建，提供 clean/compile/test/package 等完整生命周期</td></tr>
+</table>
+
+<h3>核心依赖清单</h3>
+<table>
+<tr><th>依赖</th><th>用途</th></tr>
+<tr><td>spring-boot-starter-web</td><td>Spring Boot Web 核心（含内嵌 Tomcat）</td></tr>
+<tr><td>spring-boot-starter-thymeleaf</td><td>服务端模板引擎</td></tr>
+<tr><td>mybatis-spring-boot-starter</td><td>MyBatis 与 Spring Boot 集成</td></tr>
+<tr><td>mysql-connector-j</td><td>MySQL JDBC 驱动</td></tr>
+<tr><td>jjwt-api / jjwt-impl / jjwt-jackson</td><td>JWT Token 生成与解析</td></tr>
+<tr><td>lombok</td><td>简化实体类代码（@Data、@AllArgsConstructor 等）</td></tr>
+<tr><td>pagehelper-spring-boot-starter</td><td>MyBatis 分页插件</td></tr>
+<tr><td>spring-boot-starter-validation</td><td>参数校验（@Valid、@NotBlank 等）</td></tr>
+</table>
+
+<h2>5.2 前端技术栈</h2>
+<table>
+<tr><th>技术组件</th><th>说明</th></tr>
+<tr><td>HTML5</td><td>语义化标签（header/nav/article/section）使页面结构清晰</td></tr>
+<tr><td>CSS3</td><td>Flexbox/Grid 布局 + Transition/Animation 动画</td></tr>
+<tr><td>JavaScript (ES6+)</td><td>模块化语法 + async/await 异步请求</td></tr>
+<tr><td>Bootstrap 5.3</td><td>响应式 12 栅格系统，丰富的组件库（导航栏、卡片、模态框等），跨浏览器兼容</td></tr>
+<tr><td>Thymeleaf</td><td>与 Spring Boot 天然集成，支持在 HTML 中直接访问后端数据</td></tr>
+</table>
+
+<h2>5.3 RESTful API 接口一览</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th><th>权限</th></tr>
+<tr><td>POST</td><td>/api/users/login</td><td>用户登录</td><td>公开</td></tr>
+<tr><td>POST</td><td>/api/users/register</td><td>用户注册</td><td>公开</td></tr>
+<tr><td>GET</td><td>/api/users/me</td><td>获取当前用户信息</td><td>登录</td></tr>
+<tr><td>PUT</td><td>/api/users/profile</td><td>更新个人信息</td><td>登录</td></tr>
+<tr><td>POST</td><td>/api/users/logout</td><td>退出登录</td><td>公开</td></tr>
+<tr><td>GET</td><td>/api/articles/list</td><td>文章列表（分页/分类/搜索）</td><td>公开</td></tr>
+<tr><td>GET</td><td>/api/articles/detail/{id}</td><td>文章详情</td><td>公开</td></tr>
+<tr><td>POST</td><td>/api/articles</td><td>发布文章</td><td>登录</td></tr>
+<tr><td>PUT</td><td>/api/articles/{id}</td><td>更新文章</td><td>登录</td></tr>
+<tr><td>DELETE</td><td>/api/articles/{id}</td><td>删除文章</td><td>登录</td></tr>
+<tr><td>GET</td><td>/api/comments/list/{articleId}</td><td>评论列表</td><td>公开</td></tr>
+<tr><td>POST</td><td>/api/comments</td><td>发表评论</td><td>登录</td></tr>
+<tr><td>DELETE</td><td>/api/comments/{id}</td><td>删除评论</td><td>登录</td></tr>
+<tr><td>GET</td><td>/api/categories/list</td><td>分类列表</td><td>公开</td></tr>
+<tr><td>POST</td><td>/api/categories</td><td>创建分类</td><td>管理员</td></tr>
+<tr><td>PUT</td><td>/api/categories/{id}</td><td>更新分类</td><td>管理员</td></tr>
+<tr><td>DELETE</td><td>/api/categories/{id}</td><td>删除分类</td><td>管理员</td></tr>
+</table>
+
+<h2>5.4 开发工具与环境</h2>
+<table>
+<tr><th>工具</th><th>用途</th></tr>
+<tr><td>IntelliJ IDEA / VS Code</td><td>Java 项目开发 IDE</td></tr>
+<tr><td>MySQL Workbench / Navicat</td><td>数据库可视化管理</td></tr>
+<tr><td>Postman / curl</td><td>RESTful API 接口调试</td></tr>
+<tr><td>Git + GitHub</td><td>版本控制与代码管理</td></tr>
+<tr><td>Chrome DevTools</td><td>前端调试与性能分析</td></tr>
+<tr><td>Maven</td><td>项目构建与依赖管理</td></tr>
+</table>
+</div>
+
+</body>
+</html>
