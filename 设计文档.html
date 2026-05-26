@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>博客管理系统 - 系统设计文档</title>
+<title>墨言 - 系统设计文档</title>
 <style>
   @page {
     size: A4;
@@ -157,10 +157,10 @@
 <div class="cover">
   <div class="school">百色学院</div>
   <div class="course">《网络接口编程》课程设计</div>
-  <div class="title">博客管理系统</div>
+  <div class="title">墨言</div>
   <div class="title" style="font-size:18pt; color:#555;">系统设计文档</div>
   <div class="divider">━ ━ ━ ━ ━ ━ ━ ━ ━ ━</div>
-  <div class="info"><strong>项目名称：</strong>博客管理系统（Blog Management System）</div>
+  <div class="info"><strong>项目名称：</strong>墨言（Blog Management System）</div>
   <div class="info"><strong>课程名称：</strong>网络接口编程</div>
   <div class="info"><strong>技术栈：</strong>Spring Boot + Spring MVC + MyBatis + MySQL + Bootstrap</div>
   <div class="info"><strong>版本：</strong>1.0.0</div>
@@ -212,8 +212,8 @@
 
 <h2>1.1 项目背景</h2>
 <p>随着互联网技术的快速发展和信息传播方式的深刻变革，博客作为一种重要的网络信息发布与分享平台，在现代社会中扮演着越来越重要的角色。无论是个人用户记录生活感悟、分享专业知识，还是企业机构进行品牌宣传、技术沉淀，博客系统都提供了便捷高效的解决方案。</p>
-<p>目前市面上虽然有 WordPress、Typecho 等成熟的博客平台，但这些平台功能繁杂、定制成本高，对于学习 Java EE 企业级开发技术的学生而言，从零开始构建一个轻量级博客管理系统，能够深入理解 Web 应用从后端到前端的完整开发流程，掌握 Spring Boot、Spring MVC、MyBatis 等主流框架的实际应用。</p>
-<p>本课题旨在设计并实现一个功能完整、结构清晰的博客管理系统。系统采用 B/S 架构，基于 Spring Boot 框架进行后端开发，使用 MyBatis 作为数据持久层框架，MySQL 作为数据库存储引擎，前端采用 Bootstrap 框架构建响应式用户界面。通过本项目的开发，综合检验对网络接口编程课程所学知识的掌握程度，包括 RESTful API 设计、数据持久化、前后端交互、权限控制等核心技能。</p>
+<p>目前市面上虽然有 WordPress、Typecho 等成熟的博客平台，但这些平台功能繁杂、定制成本高，对于学习 Java EE 企业级开发技术的学生而言，从零开始构建一个轻量级墨言，能够深入理解 Web 应用从后端到前端的完整开发流程，掌握 Spring Boot、Spring MVC、MyBatis 等主流框架的实际应用。</p>
+<p>本课题旨在设计并实现一个功能完整、结构清晰的墨言。系统采用 B/S 架构，基于 Spring Boot 框架进行后端开发，使用 MyBatis 作为数据持久层框架，MySQL 作为数据库存储引擎，前端采用 Bootstrap 框架构建响应式用户界面。通过本项目的开发，综合检验对网络接口编程课程所学知识的掌握程度，包括 RESTful API 设计、数据持久化、前后端交互、权限控制等核心技能。</p>
 <p>该系统面向两类用户群体：普通用户和管理员。普通用户可以浏览文章、发表评论，管理员则在此基础上拥有文章管理、分类管理和用户管理等高级权限。系统要求具备完整的用户认证流程、规范的数据库设计、良好的页面交互体验以及稳定的运行性能。</p>
 
 <h2>1.2 需求分析概述</h2>
@@ -264,7 +264,7 @@
 <h1>二、系统功能模块划分</h1>
 
 <h2>2.1 系统总体功能模块</h2>
-<p>博客管理系统按业务功能划分为以下四大核心模块：</p>
+<p>墨言按业务功能划分为以下四大核心模块：</p>
 
 <table>
 <tr><th>模块</th><th>子功能</th><th>说明</th></tr>
@@ -431,7 +431,7 @@
 <h1>四、系统架构设计</h1>
 
 <h2>4.1 系统总体架构</h2>
-<p>博客管理系统采用基于 B/S（Browser/Server）模式的分层架构设计。系统整体分为表现层、业务逻辑层和数据访问层，各层职责清晰、耦合度低，便于开发和维护。</p>
+<p>墨言采用基于 B/S（Browser/Server）模式的分层架构设计。系统整体分为表现层、业务逻辑层和数据访问层，各层职责清晰、耦合度低，便于开发和维护。</p>
 
 <div class="arch-box">
 <div class="layer layer-top">

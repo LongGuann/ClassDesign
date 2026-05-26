@@ -1,4 +1,4 @@
-// ====== 博客管理系统 通用 JavaScript ======
+// ====== 墨言 通用 JavaScript ======
 
 // API 基础路径
 const API_BASE = '/api';
