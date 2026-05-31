@@ -17,4 +17,6 @@ public interface CommentMapper {
     int deleteById(@Param("commentId") Integer commentId);
 
     int deleteByArticleId(@Param("articleId") Integer articleId);
+
+    int deleteByParentId(@Param("parentId") Integer parentId);
 }

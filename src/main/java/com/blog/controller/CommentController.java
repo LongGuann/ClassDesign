@@ -40,6 +40,24 @@ public class CommentController {
     }
 
     /**
+     * 回复评论（API）
+     */
+    @PostMapping("/reply")
+    public Result<Comment> reply(@RequestBody Comment comment, HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.unauthorized("请先登录");
+        }
+        comment.setUserId(userId);
+        try {
+            commentService.reply(comment);
+            return Result.success("回复成功", comment);
+        } catch (IllegalArgumentException e) {
+            return Result.error(400, e.getMessage());
+        }
+    }
+
+    /**
      * 删除评论（API）
      */
     @DeleteMapping("/{id}")

@@ -8,5 +8,7 @@ public interface CommentService {
 
     Comment create(Comment comment);
 
+    Comment reply(Comment comment);
+
     void delete(Integer commentId, Integer userId, String role);
 }
