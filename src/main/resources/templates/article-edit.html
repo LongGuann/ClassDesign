@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>编辑文章 - 博客管理系统</title>
+    <title>编辑文章 - 墨言</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/static/css/blog.css" rel="stylesheet">
@@ -11,7 +11,7 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-blog fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="/api/articles/index">📝 博客管理系统</a>
+        <a class="navbar-brand" href="/api/articles/index">📝 墨言</a>
         <div class="collapse navbar-collapse show">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" th:href="@{/api/articles/detail-page/{id}(id=${article.articleId})}">← 返回文章</a></li>
@@ -29,8 +29,12 @@
                         <h4 class="mb-0"><i class="bi bi-pencil-square"></i> 编辑文章</h4>
                     </div>
                     <div class="card-body p-4">
+                        <div class="mb-3" th:if="${article.status == 0}">
+                            <span class="badge bg-warning text-dark fs-6">当前状态：草稿</span>
+                        </div>
                         <form id="articleForm">
                             <input type="hidden" id="articleId" th:value="${article.articleId}">
+                            <input type="hidden" id="status" th:value="${article.status}">
                             <div class="mb-3">
                                 <label class="form-label">文章标题 <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="title" th:value="${article.title}" required>
@@ -59,9 +63,13 @@
                             </div>
                             <div class="d-flex justify-content-between">
                                 <a th:href="@{/api/articles/detail-page/{id}(id=${article.articleId})}" class="btn btn-outline-secondary">取消</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-lg"></i> 保存修改
-                                </button>
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary me-2" onclick="saveDraft()">保存草稿</button>
+                                    <button type="submit" class="btn btn-primary" id="publishBtn">
+                                        <span id="publishText">发布文章</span>
+                                        <span id="publishSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -76,35 +84,60 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/blog.js"></script>
 <script>
+let isSubmitting2 = false;
+
 document.getElementById('articleForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+    if (isSubmitting2) return;
+    await submitArticle(1);
+});
+
+async function saveDraft() {
+    if (isSubmitting2) return;
+    await submitArticle(0);
+}
+
+async function submitArticle(status) {
+    isSubmitting2 = true;
+    const btn = document.getElementById('publishBtn');
+    const txt = document.getElementById('publishText');
+    const spinner = document.getElementById('publishSpinner');
+    btn.disabled = true;
+    txt.classList.add('d-none');
+    spinner.classList.remove('d-none');
 
     const articleId = document.getElementById('articleId').value;
     const title = document.getElementById('title').value.trim();
     const content = document.getElementById('content').value.trim();
     const categoryId = document.getElementById('categoryId').value;
 
-    if (!title) { showToast('请输入文章标题', 'warning'); return; }
-    if (!categoryId) { showToast('请选择文章分类', 'warning'); return; }
-    if (!content) { showToast('请输入文章内容', 'warning'); return; }
+    if (!title) { showToast('请输入文章标题', 'warning'); isSubmitting2 = false; btn.disabled = false; txt.classList.remove('d-none'); spinner.classList.add('d-none'); return; }
+    if (!categoryId) { showToast('请选择文章分类', 'warning'); isSubmitting2 = false; btn.disabled = false; txt.classList.remove('d-none'); spinner.classList.add('d-none'); return; }
+    if (!content) { showToast('请输入文章内容', 'warning'); isSubmitting2 = false; btn.disabled = false; txt.classList.remove('d-none'); spinner.classList.add('d-none'); return; }
 
     const result = await apiRequest(`${API_BASE}/articles/${articleId}`, 'PUT', {
         title,
         content,
         summary: document.getElementById('summary').value.trim(),
         coverImage: document.getElementById('coverImage').value.trim(),
-        categoryId: parseInt(categoryId)
+        categoryId: parseInt(categoryId),
+        status: status
     });
 
+    isSubmitting2 = false;
+    btn.disabled = false;
+    txt.classList.remove('d-none');
+    spinner.classList.add('d-none');
+
     if (result && result.code === 200) {
-        showToast('保存成功！', 'success');
+        showToast(status === 1 ? '发布成功！' : '已保存为草稿', 'success');
         setTimeout(() => {
             window.location.href = `/api/articles/detail-page/${articleId}`;
         }, 500);
     } else {
-        showToast(result.message || '保存失败', 'danger');
+        showToast(result.message || '操作失败', 'danger');
     }
-});
+}
 </script>
 </body>
 </html>

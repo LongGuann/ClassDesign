@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${article.title} + ' - 博客管理系统'">文章详情</title>
+    <title th:text="${article.title} + ' - 墨言'">文章详情</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/static/css/blog.css" rel="stylesheet">
+    <style>
+        .comment-reply { margin-left: 50px; border-left: 2px solid #e8ecf1; padding-left: 16px; }
+        .comment-reply .comment-item { border-bottom: none; padding: 0.6rem 0; }
+        .reply-btn { font-size: 0.8rem; cursor: pointer; color: #6c757d; }
+        .reply-btn:hover { color: #1a3c6e; }
+        .reply-form-inline { margin: 8px 0 8px 50px; display: none; }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark navbar-blog fixed-top">
     <div class="container">
-        <a class="navbar-brand" href="/api/articles/index">📝 博客管理系统</a>
+        <a class="navbar-brand" href="/api/articles/index">📝 墨言</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -56,11 +63,8 @@
                             <span><i class="bi bi-eye"></i> <span th:text="${article.viewCount}">0</span> 次阅读</span>
                         </div>
                         <hr>
-                        <div class="article-content" th:utext="${#strings.replace(article.content, newLine, '&lt;br&gt;')}">
-                            正文内容
-                        </div>
+                        <div class="article-content" style="white-space: pre-wrap;" th:text="${article.content}">正文内容</div>
 
-                        <!-- 操作按钮 -->
                         <div class="mt-4 d-flex gap-2" id="articleActions" style="display:none !important;">
                             <a th:href="@{/api/articles/edit-page/{id}(id=${article.articleId})}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-pencil"></i> 编辑
@@ -73,7 +77,7 @@
                 </div>
 
                 <!-- 评论区域 -->
-                <div class="card mt-4">
+                <div class="card mt-4" id="commentsSection">
                     <div class="card-header">
                         <i class="bi bi-chat-dots"></i> 评论
                         <span class="badge bg-secondary ms-2" id="commentCount">0</span>
@@ -118,7 +122,7 @@
 
 <footer class="footer">
     <div class="container text-center">
-        <small>© 2026 博客管理系统 - 网络接口编程课程设计</small>
+        <small>© 2026 墨言 - 网络接口编程课程设计</small>
     </div>
 </footer>
 
@@ -126,6 +130,7 @@
 <script src="/static/js/blog.js"></script>
 <script>
 const articleId = [[${article.articleId}]];
+let currentUserId = null;
 
 async function loadComments() {
     const result = await apiRequest(`${API_BASE}/comments/list/${articleId}`);
@@ -135,31 +140,109 @@ async function loadComments() {
         const empty = document.getElementById('emptyComments');
         const count = document.getElementById('commentCount');
 
-        count.textContent = comments.length;
+        // 计算总数（含回复）
+        let total = 0;
+        comments.forEach(c => { total += 1 + (c.replies ? c.replies.length : 0); });
+        count.textContent = total;
 
-        if (comments.length === 0) {
+        if (total === 0) {
             list.innerHTML = '';
             empty.style.display = 'block';
             return;
         }
-
         empty.style.display = 'none';
-        list.innerHTML = comments.map(c => `
-            <div class="comment-item">
-                <div class="d-flex">
-                    <div class="comment-avatar me-3">${(c.authorName || '?')[0]}</div>
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <span class="comment-author">${c.authorName || '匿名'}</span>
-                                <span class="comment-time ms-2">${formatTime(c.createTime)}</span>
-                            </div>
-                        </div>
-                        <div class="comment-content">${c.content}</div>
+        list.innerHTML = comments.map(c => renderComment(c)).join('');
+    }
+}
+
+function renderComment(c) {
+    const isLoggedIn = currentUserId !== null;
+    const repliesHtml = c.replies && c.replies.length > 0
+        ? `<div class="comment-reply">${c.replies.map(r => renderReply(r)).join('')}</div>`
+        : '';
+    const replyBtn = isLoggedIn ? `<span class="reply-btn ms-3" onclick="showReplyForm(${c.commentId}, '${c.authorName}')">回复</span>` : '';
+
+    return `
+        <div class="comment-item">
+            <div class="d-flex">
+                <div class="comment-avatar me-3">${(c.authorName || '?')[0]}</div>
+                <div class="flex-grow-1">
+                    <div>
+                        <span class="comment-author">${c.authorName || '匿名'}</span>
+                        <span class="comment-time ms-2">${formatTime(c.createTime)}</span>
+                        ${replyBtn}
                     </div>
+                    <div class="comment-content mt-1">${c.content}</div>
                 </div>
             </div>
-        `).join('');
+            ${repliesHtml}
+        </div>
+        <div class="reply-form-inline" id="replyForm_${c.commentId}">
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" id="replyInput_${c.commentId}" placeholder="回复 ${c.authorName}..." maxlength="500">
+                <button class="btn btn-primary btn-sm" onclick="submitReply(${c.commentId})">发送</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="hideReplyForm(${c.commentId})">取消</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderReply(r) {
+    const replyTo = r.replyToName ? `<span class="text-muted">@${r.replyToName} </span>` : '';
+    const replyBtn = currentUserId !== null ? `<span class="reply-btn ms-2" onclick="showReplyForm(${r.parentId}, '${r.authorName}')">回复</span>` : '';
+    return `
+        <div class="comment-item">
+            <div class="d-flex">
+                <div class="comment-avatar me-2" style="width:30px;height:30px;font-size:0.8rem;">${(r.authorName || '?')[0]}</div>
+                <div class="flex-grow-1">
+                    <div>
+                        <span class="comment-author" style="font-size:0.9rem;">${r.authorName || '匿名'}</span>
+                        <span class="comment-time ms-2">${formatTime(r.createTime)}</span>
+                        ${replyBtn}
+                    </div>
+                    <div class="comment-content mt-1" style="font-size:0.95rem;">${replyTo}${r.content}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showReplyForm(commentId, authorName) {
+    hideAllReplyForms();
+    const form = document.getElementById('replyForm_' + commentId);
+    if (form) {
+        form.style.display = 'block';
+        const input = document.getElementById('replyInput_' + commentId);
+        if (input) { input.focus(); input.placeholder = '回复 ' + authorName + '...'; }
+    }
+}
+
+function hideReplyForm(commentId) {
+    const form = document.getElementById('replyForm_' + commentId);
+    if (form) form.style.display = 'none';
+}
+
+function hideAllReplyForms() {
+    document.querySelectorAll('.reply-form-inline').forEach(el => el.style.display = 'none');
+}
+
+async function submitReply(parentId) {
+    const input = document.getElementById('replyInput_' + parentId);
+    const content = input ? input.value.trim() : '';
+    if (!content) { showToast('请输入回复内容', 'warning'); return; }
+
+    const result = await apiRequest(`${API_BASE}/comments/reply`, 'POST', {
+        content: content,
+        articleId: articleId,
+        parentId: parentId
+    });
+    if (result && result.code === 200) {
+        if (input) input.value = '';
+        hideReplyForm(parentId);
+        showToast('回复成功！', 'success');
+        loadComments();
+    } else {
+        showToast(result.message || '回复失败', 'danger');
     }
 }
 
@@ -175,10 +258,7 @@ function formatTime(dateStr) {
 
 async function submitComment() {
     const content = document.getElementById('commentContent').value.trim();
-    if (!content) {
-        showToast('请输入评论内容', 'warning');
-        return;
-    }
+    if (!content) { showToast('请输入评论内容', 'warning'); return; }
     const result = await apiRequest(`${API_BASE}/comments`, 'POST', {
         content: content,
         articleId: articleId
@@ -210,6 +290,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (token) {
         const user = await fetchCurrentUser();
         if (user) {
+            currentUserId = user.userId;
             document.getElementById('commentFormSection').style.display = 'block';
             document.getElementById('loginHint').style.display = 'none';
             document.getElementById('create-nav').style.display = 'block';
@@ -217,7 +298,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('user-nav').classList.remove('d-none');
             document.getElementById('user-nickname').textContent = user.nickname || user.username;
 
-            // 显示文章操作按钮（作者本人或管理员）
             if (user.userId === [[${article.userId}]] || user.role === 'admin') {
                 document.getElementById('articleActions').style.display = 'flex !important';
                 document.getElementById('articleActions').classList.remove('d-none');

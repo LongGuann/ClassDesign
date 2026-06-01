@@ -39,15 +39,14 @@ public class ArticleController {
             pageResult = articleService.search(keyword, page, 10);
             model.addAttribute("keyword", keyword);
         } else if (categoryId != null) {
-            // 按分类筛选需要单独处理
-            pageResult = null; // 简化处理
+            pageResult = articleService.findByCategoryId(categoryId, page, 10);
+            model.addAttribute("categoryId", categoryId);
         } else {
             pageResult = articleService.findAll(page, 10);
         }
         List<Category> categories = categoryService.findAll();
         model.addAttribute("pageResult", pageResult);
         model.addAttribute("categories", categories);
-        model.addAttribute("categoryId", categoryId);
         return "index";
     }
 
@@ -118,6 +117,8 @@ public class ArticleController {
         PageResult<Article> pageResult;
         if (keyword != null && !keyword.isEmpty()) {
             pageResult = articleService.search(keyword, page, 10);
+        } else if (categoryId != null) {
+            pageResult = articleService.findByCategoryId(categoryId, page, 10);
         } else {
             pageResult = articleService.findAll(page, 10);
         }
@@ -196,7 +197,6 @@ public class ArticleController {
     @ResponseBody
     public Result<Void> delete(@PathVariable Integer id, HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("userId");
-        String role = (String) request.getAttribute("role");
         if (userId == null) {
             return Result.unauthorized("请先登录");
         }

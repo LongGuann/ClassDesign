@@ -37,6 +37,14 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    public PageResult<Article> findByCategoryId(Integer categoryId, int pageNum, int pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Article> list = articleMapper.selectByCategoryId(categoryId);
+        PageInfo<Article> pageInfo = new PageInfo<>(list);
+        return PageResult.of(pageInfo.getList(), pageNum, pageSize, pageInfo.getTotal());
+    }
+
+    @Override
     public PageResult<Article> findByUserId(Integer userId, int pageNum, int pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<Article> list = articleMapper.selectByUserId(userId);
@@ -56,7 +64,7 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional
     public Article create(Article article) {
         if (article.getStatus() == null) {
-            article.setStatus(1); // 默认为发布状态
+            article.setStatus(1);
         }
         article.setViewCount(0);
         articleMapper.insert(article);

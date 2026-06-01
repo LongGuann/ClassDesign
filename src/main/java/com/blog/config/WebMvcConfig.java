@@ -18,7 +18,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
-                        // 公开API
+                        // 仅公开API和首页（无需登录）
                         "/api/users/login",
                         "/api/users/register",
                         "/api/users/login-page",
@@ -26,10 +26,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/articles/list",
                         "/api/articles/detail/**",
                         "/api/articles/detail-page/**",
+                        "/api/articles/index",
                         "/api/categories/list",
                         "/api/comments/list/**",
-                        // 公开页面
-                        "/api/articles/index",
                         // 静态资源
                         "/static/**"
                 );
